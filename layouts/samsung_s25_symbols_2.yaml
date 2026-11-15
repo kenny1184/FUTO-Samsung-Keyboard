@@ -1,0 +1,30 @@
+name: Samsung S25 Ultra Symbols (2/2)
+numberRowMode: AlwaysEnabled
+bottomRowHeightMode: Flexible
+rowHeightMode: FillHeight
+attributes: {style: NoBackground, shiftable: false, moreKeyMode: OnlyExplicit, useKeySpecShortcut: false}
+rows:
+  - numbers: "1 2 3 4 5 6 7 8 9 0"
+    rowHeight: 1.0
+    attributes: {width: Regular}
+  - letters: ["~", "`", '\|', '\\', "{", "}", "•", "√", "π", "°"]
+  - letters: ["$", "£", "¥", "¢", "₹", "₩", "©", "®", "™", "§"]
+  - letters:
+      - type: base
+        spec: "2/2|!code/key_shift"
+        attributes: {width: FunctionalKey, showPopup: false, anchored: true}
+      - "–"
+      - "—"
+      - "…"
+      - "«"
+      - "»"
+      - "¿"
+      - "¡"
+      - {type: delete, attributes: {style: NoBackground}}
+  - bottom:
+      - {type: alphabet, attributes: {style: NoBackground}}
+      - {type: contextual, fallbackKey: ","}
+      - {type: space, attributes: {style: NoBackground}}
+      - "."
+      - {type: enter, attributes: {style: NoBackground, width: FunctionalKey}}
+    attributes: {showPopup: false}
