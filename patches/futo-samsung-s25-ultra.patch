@@ -225,21 +225,37 @@ index 61e4506..a508d5b 100644
      public void deallocateMemory() {
          super.deallocateMemory();
 diff --git a/java/src/org/futo/inputmethod/latin/Subtypes.kt b/java/src/org/futo/inputmethod/latin/Subtypes.kt
-index 03c0f03..2feb263 100644
+index 03c0f03..450f8e4 100644
 --- a/java/src/org/futo/inputmethod/latin/Subtypes.kt
 +++ b/java/src/org/futo/inputmethod/latin/Subtypes.kt
-@@ -121,18 +121,19 @@ object Subtypes {
+@@ -36,10 +36,13 @@ import androidx.compose.ui.res.stringResource
+ import androidx.compose.ui.text.style.TextAlign
+ import androidx.compose.ui.tooling.preview.Preview
+ import androidx.compose.ui.unit.dp
++import androidx.datastore.preferences.core.edit
+ import androidx.datastore.preferences.core.stringPreferencesKey
+ import androidx.datastore.preferences.core.stringSetPreferencesKey
++import kotlinx.coroutines.runBlocking
+ import org.futo.inputmethod.latin.common.Constants
+ import org.futo.inputmethod.latin.uix.SettingsKey
++import org.futo.inputmethod.latin.uix.dataStore
+ import org.futo.inputmethod.latin.uix.getSetting
+ import org.futo.inputmethod.latin.uix.getSettingBlocking
+ import org.futo.inputmethod.latin.uix.isDirectBootUnlocked
+@@ -121,21 +124,31 @@ object Subtypes {
          val locales = context.resources.configuration.locales
          if(locales.size() == 0) return
  
 -        var numAdded = 0
 +        val activeLanguages = mutableSetOf<String>()
++        val defaultSubtypes = linkedSetOf<String>()
          for(i in 0 until locales.size()) {
              val locale = locales.get(i).stripExtensionsIfNeeded()
              val layout = findClosestLocaleLayouts(context, locale).firstOrNull() ?: continue
  
-             addLanguage(context, locale, layout)
+-            addLanguage(context, locale, layout)
 -            numAdded += 1
++            defaultSubtypes.add(subtypeToString(makeSubtype(locale.toString(), layout)))
 +            activeLanguages.add(locale.language)
          }
  
@@ -248,12 +264,24 @@ index 03c0f03..2feb263 100644
 -            addLanguage(context, Locale.forLanguageTag("zz"), "qwerty")
 +        for (locale in listOf(Locale.forLanguageTag("nl-NL"), Locale.US)) {
 +            if (activeLanguages.add(locale.language)) {
-+                addLanguage(context, locale, LayoutManager.SAMSUNG_S25_LAYOUT)
++                defaultSubtypes.add(subtypeToString(makeSubtype(locale.toString(), LayoutManager.SAMSUNG_S25_LAYOUT)))
 +            }
          }
  
-         context.setSettingBlocking(ActiveSubtype.key, context.getSettingBlocking(SubtypesSetting).firstOrNull() ?: return)
-@@ -341,8 +342,12 @@ object Subtypes {
+-        context.setSettingBlocking(ActiveSubtype.key, context.getSettingBlocking(SubtypesSetting).firstOrNull() ?: return)
++        val firstSubtype = defaultSubtypes.firstOrNull() ?: return
++        runBlocking {
++            context.dataStore.edit { preferences ->
++                if (preferences[SubtypesSetting.key].isNullOrEmpty()) {
++                    preferences[SubtypesSetting.key] = defaultSubtypes
++                    preferences[ActiveSubtype.key] = firstSubtype
++                }
++            }
++        }
+     }
+ 
+     fun findClosestLocaleLayouts(context: Context, locale: Locale): List<String> {
+@@ -341,8 +354,12 @@ object Subtypes {
      }
  
      @JvmStatic
@@ -268,7 +296,7 @@ index 03c0f03..2feb263 100644
  
          if(availableWidth <= 5.0f) {
              return locale.language.uppercase();
-@@ -538,4 +543,4 @@ fun LanguageSwitcherDialog(
+@@ -538,4 +555,4 @@ fun LanguageSwitcherDialog(
              }
          }
      }
