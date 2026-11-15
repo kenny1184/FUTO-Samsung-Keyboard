@@ -1,18 +1,23 @@
 name: Samsung S25 Ultra Symbols (1/2)
 numberRowMode: AlwaysEnabled
-bottomRowHeightMode: Flexible
-rowHeightMode: FillHeight
-attributes: {style: NoBackground, shiftable: false, moreKeyMode: OnlyExplicit, useKeySpecShortcut: false}
+bottomRowHeightMode: Fixed
+rowHeightMode: ClampHeight
+overrideWidths:
+  Regular: 0.098
+  Custom1: 0.15 # Shift or page switch, and Backspace
+  Custom2: 0.16 # Symbols or ABC, and Enter
+  Custom3: 0.104 # Comma and period
+attributes: {style: Normal, shiftable: false, moreKeyMode: OnlyExplicit, useKeySpecShortcut: false}
 rows:
   - numbers: "1 2 3 4 5 6 7 8 9 0"
-    rowHeight: 1.0
+    rowHeight: 0.88
     attributes: {width: Regular}
   - letters: ["+", "×", "÷", "=", "/", "_", "<", ">", "[", "]"]
   - letters: ["!", "@", "#", "€", "%", "^", "&", "*", "(", ")"]
   - letters:
       - type: base
         spec: "1/2|!code/key_shift"
-        attributes: {width: FunctionalKey, showPopup: false, anchored: true}
+        attributes: {style: Functional, width: Custom1, showPopup: false, anchored: true}
       - "-"
       - "'"
       - '"'
@@ -20,11 +25,11 @@ rows:
       - ";"
       - ","
       - "?"
-      - {type: delete, attributes: {style: NoBackground}}
+      - {type: delete, attributes: {width: Custom1}}
   - bottom:
-      - {type: alphabet, attributes: {style: NoBackground}}
+      - {type: alphabet, attributes: {width: Custom2}}
       - {type: contextual, fallbackKey: ","}
-      - {type: space, attributes: {style: NoBackground}}
+      - {type: space}
       - "."
-      - {type: enter, attributes: {style: NoBackground, width: FunctionalKey}}
-    attributes: {showPopup: false}
+      - {type: enter, attributes: {style: Action, width: Custom2}}
+    attributes: {style: Normal, width: Custom3, moreKeyMode: OnlyExplicit, showPopup: false}

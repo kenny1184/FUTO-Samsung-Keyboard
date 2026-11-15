@@ -44,10 +44,16 @@ models = (
     "chosen_planarian/context_lm.pte",
 )
 with ZipFile(sys.argv[1]) as apk:
+    for language in ("en", "nl"):
+        path = f"res/raw/main_{language}.dict"
+        with apk.open(path) as dictionary:
+            if dictionary.read(6) != bytes.fromhex("9bc13afe00ca"):
+                raise SystemExit(f"Offline dictionary has an unexpected format: {path}")
+
     for model in models:
         entry = apk.getinfo(f"assets/futo-swipe/{model}")
         if entry.file_size < 4096:
             raise SystemExit(f"Offline swipe model missing or still a Git LFS pointer: {model}")
 PY
 
-echo "Verified the signed S25 APK, its layout assets and its privacy settings."
+echo "Verified the signed S25 APK, its layouts, offline dictionaries and privacy settings."

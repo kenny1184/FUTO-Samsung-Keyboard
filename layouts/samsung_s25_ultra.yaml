@@ -5,15 +5,20 @@ layoutSetOverrides:
   symbols: samsung_s25_symbols
   symbolsShifted: samsung_s25_symbols_2
 numberRowMode: AlwaysEnabled
-bottomRowHeightMode: Flexible
-rowHeightMode: FillHeight
+bottomRowHeightMode: Fixed
+rowHeightMode: ClampHeight
+overrideWidths:
+  Regular: 0.098
+  Custom1: 0.15 # Shift or page switch, and Backspace
+  Custom2: 0.16 # Symbols or ABC, and Enter
+  Custom3: 0.104 # Comma and period
 attributes:
-  style: NoBackground
+  style: Normal
   moreKeyMode: OnlyFromLetter
   useKeySpecShortcut: false
 rows:
   - numbers: "1 2 3 4 5 6 7 8 9 0"
-    rowHeight: 1.0
+    rowHeight: 0.88
     attributes: {width: Regular, moreKeyMode: OnlyExplicit}
   - letters:
       - {type: base, spec: q, hint: "+", moreKeys: ["+"]}
@@ -31,27 +36,27 @@ rows:
       - {type: base, spec: s, hint: "@", moreKeys: ["@"]}
       - {type: base, spec: d, hint: "#", moreKeys: ["#"]}
       - {type: base, spec: f, hint: "€", moreKeys: ["€"]}
-      - {type: base, spec: g, hint: "%", moreKeys: ["%"]}
+      - {type: base, spec: g, hint: "%", moreKeys: ["%|%"]}
       - {type: base, spec: h, hint: "&", moreKeys: ["&"]}
       - {type: base, spec: j, hint: "*", moreKeys: ["*"]}
       - {type: base, spec: k, hint: "(", moreKeys: ["("]}
       - {type: base, spec: l, hint: ")", moreKeys: [")"]}
   - letters:
-      - {type: shift, attributes: {style: NoBackground}}
+      - {type: shift, attributes: {width: Custom1}}
       - {type: base, spec: z, hint: "-", moreKeys: ["-"]}
       - {type: base, spec: x, hint: "'", moreKeys: ["'"]}
       - {type: base, spec: c, hint: '"', moreKeys: ['"']}
       - {type: base, spec: v, hint: ":", moreKeys: [":"]}
       - {type: base, spec: b, hint: ";", moreKeys: [";"]}
-      - {type: base, spec: n, hint: ",", moreKeys: ['\,']}
+      - {type: base, spec: n, hint: ",", moreKeys: [","]}
       - {type: base, spec: m, hint: "?", moreKeys: ["?"]}
-      - {type: delete, attributes: {style: NoBackground}}
+      - {type: delete, attributes: {width: Custom1}}
   - bottom:
       - type: base
         spec: "!#1|!code/key_switch_alpha_symbol"
-        attributes: {width: FunctionalKey, showPopup: false, anchored: true}
+        attributes: {style: Functional, width: Custom2, showPopup: false, anchored: true}
       - {type: contextual, fallbackKey: ","}
-      - {type: space, attributes: {style: NoBackground}}
+      - {type: space}
       - "$period"
-      - {type: enter, attributes: {style: NoBackground, width: FunctionalKey}}
-    attributes: {moreKeyMode: OnlyExplicit, showPopup: false}
+      - {type: enter, attributes: {style: Action, width: Custom2}}
+    attributes: {style: Normal, width: Custom3, moreKeyMode: OnlyExplicit, showPopup: false}
