@@ -1,0 +1,43 @@
+name: FUTO APK Build Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout FUTO source
+        uses: actions/checkout@v4
+        with:
+          repository: futo-org/android-keyboard
+          ref: master
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Compile APK
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleUnstableDebug --stacktrace --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: FUTO-Test-APK
+          path: '**/build/outputs/apk/**/*.apk'
+          if-no-files-found: error
+          retention-days: 7
