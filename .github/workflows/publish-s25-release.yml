@@ -1,0 +1,56 @@
+name: Publish S25 Keyboard 0.2.0-s25
+
+on:
+  push:
+    branches: [release/publish-v0.2.0-s25]
+    paths: ['.github/workflows/publish-s25-release.yml']
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: publish-s25-keyboard-0.2.0-s25
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'kenny1184/FUTO-Samsung-Keyboard'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Download the verified APK from run 8
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: '43739351643'
+          name: S25-Keyboard-APK
+          path: release
+
+      - name: Verify and publish the APK
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          apk=release/S25-Keyboard.apk
+          expected_sha=fb913a9888c7e80de13902bddb9a32f7ed242df40749884e4cab61dbc4bc174b
+          printf '%s  %s\n' "$expected_sha" "$apk" | sha256sum --check
+
+          notes="$RUNNER_TEMP/s25-release-notes.md"
+          cat > "$notes" <<'NOTES'
+          Compactere Samsung S25 Ultra-layout met afgeronde toetsen. Nederlands en Engels werken offline. Veeg horizontaal over de spatiebalk om van taal te wisselen.
+
+          `S25-Keyboard.apk` is build 8 voor pakket `org.futo.inputmethod.latin.s25` (Android 7.0 of hoger). De APK heeft een geldige debughandtekening en komt uit [GitHub Actions-run #8](https://github.com/kenny1184/FUTO-Samsung-Keyboard/actions/runs/43739351643). Wie een oudere S25-build met een ander certificaat heeft geïnstalleerd, moet die eerst verwijderen.
+
+          SHA-256 van de APK
+
+          `fb913a9888c7e80de13902bddb9a32f7ed242df40749884e4cab61dbc4bc174b`
+          NOTES
+
+          gh release create v0.2.0-s25 "$apk" \
+            --repo "$GH_REPO" \
+            --target 45bfa7c5f7cadb57ff5852580d1898f4ae91f507 \
+            --title 'S25 Keyboard 0.2.0-s25' \
+            --notes-file "$notes"
