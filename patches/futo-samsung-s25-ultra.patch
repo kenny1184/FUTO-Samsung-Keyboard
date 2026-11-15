@@ -69,18 +69,35 @@ index a515d65..bd3cf97 100644
      <string name="theme_classic_dark">AOSP Material Dark</string>
      <string name="theme_classic_light">AOSP Material Light</string>
 diff --git a/java/src/org/futo/inputmethod/keyboard/MainKeyboardView.java b/java/src/org/futo/inputmethod/keyboard/MainKeyboardView.java
-index 61e4506..4c75c35 100644
+index 61e4506..a508d5b 100644
 --- a/java/src/org/futo/inputmethod/keyboard/MainKeyboardView.java
 +++ b/java/src/org/futo/inputmethod/keyboard/MainKeyboardView.java
-@@ -58,6 +58,7 @@ import org.futo.inputmethod.latin.R;
+@@ -25,6 +25,7 @@ import android.graphics.Canvas;
+ import android.graphics.Color;
+ import android.graphics.Paint;
+ import android.graphics.Paint.Align;
++import android.graphics.Path;
+ import android.graphics.Rect;
+ import android.graphics.Typeface;
+ import android.util.AttributeSet;
+@@ -58,6 +59,8 @@ import org.futo.inputmethod.latin.R;
  import org.futo.inputmethod.latin.SuggestedWords;
  import org.futo.inputmethod.latin.common.Constants;
  import org.futo.inputmethod.latin.common.CoordinateUtils;
 +import org.futo.inputmethod.latin.settings.Settings;
++import org.futo.inputmethod.latin.settings.SettingsValues;
  import org.futo.inputmethod.latin.uix.theme.KeyDrawingConfiguration;
  import org.futo.inputmethod.latin.utils.LanguageOnSpacebarUtils;
  import org.futo.inputmethod.latin.utils.SubtypeLocaleUtils;
-@@ -813,9 +814,13 @@ public final class MainKeyboardView extends KeyboardView implements DrawingProxy
+@@ -130,6 +133,7 @@ public final class MainKeyboardView extends KeyboardView implements DrawingProxy
+     private ObjectAnimator mLanguageOnSpacebarFadeoutAnimator;
+     private int mLanguageOnSpacebarFormatType;
+     private boolean mHasMultipleEnabledIMEsOrSubtypes;
++    private final Path mSpacebarChevron = new Path();
+     private int mLanguageOnSpacebarAnimAlpha = Constants.Color.ALPHA_OPAQUE;
+     private final float mLanguageOnSpacebarTextRatio;
+     private float mLanguageOnSpacebarTextSize;
+@@ -813,9 +817,13 @@ public final class MainKeyboardView extends KeyboardView implements DrawingProxy
          super.onDrawKeyTopVisuals(key, canvas, paint, params, kdc, keyWidth, keyHeight);
          final int code = key.getCode();
          if (code == Constants.CODE_SPACE && (key.getIconId().equals("space_key") || mLanguageSwipeProgress != 0.0f)) {
@@ -96,7 +113,7 @@ index 61e4506..4c75c35 100644
                  drawKeyPopupHint(key, canvas, paint, params);
              }
          } else if (code == Constants.CODE_LANGUAGE_SWITCH) {
-@@ -841,9 +846,9 @@ public final class MainKeyboardView extends KeyboardView implements DrawingProxy
+@@ -841,14 +849,15 @@ public final class MainKeyboardView extends KeyboardView implements DrawingProxy
      }
  
      // Layout language name on spacebar.
@@ -109,7 +126,14 @@ index 61e4506..4c75c35 100644
              return "";
          }
  
-@@ -856,7 +861,8 @@ public final class MainKeyboardView extends KeyboardView implements DrawingProxy
+         paint.setTextScaleX(1.0f);
+-        final String name = Subtypes.getLanguageOnSpaceBar(locale, horizontalWidth / paint.measureText("Q"));
++        final String name = Subtypes.getLanguageOnSpaceBar(
++                locale, horizontalWidth / paint.measureText("Q"), samsungSpacebar);
+         if (fitsTextIntoWidth(width, name, paint)) {
+             return name;
+         }
+@@ -856,7 +865,8 @@ public final class MainKeyboardView extends KeyboardView implements DrawingProxy
          return "";
      }
  
@@ -119,20 +143,29 @@ index 61e4506..4c75c35 100644
          final Keyboard keyboard = getKeyboard();
          if (keyboard == null) {
              return;
-@@ -873,7 +879,11 @@ public final class MainKeyboardView extends KeyboardView implements DrawingProxy
+@@ -873,11 +883,19 @@ public final class MainKeyboardView extends KeyboardView implements DrawingProxy
          paint.setTextAlign(Align.CENTER);
          paint.setTypeface(mDrawableProvider.selectKeyTypeface(Typeface.DEFAULT));
          paint.setTextSize(mLanguageOnSpacebarTextSize);
 -        final String language = layoutLanguageOnSpacebar(paint, keyboard.mId.mLocale, width, key.getWidth());
-+        final boolean showLanguageArrows = samsungSpacebar && mHasMultipleEnabledIMEsOrSubtypes
-+                && Settings.getInstance().getCurrent().mSpacebarSwipeMode == Settings.SPACEBAR_MODE_LANGUAGE;
-+        final int labelWidth = showLanguageArrows ? Math.round(width * 0.60f) : width;
++        final SettingsValues settings = samsungSpacebar ? Settings.getInstance().getCurrent() : null;
++        final boolean showLanguageArrows = settings != null && mHasMultipleEnabledIMEsOrSubtypes
++                && settings.mSpacebarSwipeMode == Settings.SPACEBAR_MODE_LANGUAGE
++                && settings.mInputAttributes.mLocaleOverride == null
++                && settings.mInputAttributes.mLayoutOverride == null;
++        final int labelWidth = showLanguageArrows ? Math.round(width * 0.64f) : width;
 +        final String language = layoutLanguageOnSpacebar(
-+                paint, keyboard.mId.mLocale, labelWidth, key.getWidth(), samsungSpacebar);
++                paint, keyboard.mId.mLocale, labelWidth,
++                samsungSpacebar ? labelWidth : key.getWidth(), samsungSpacebar);
          // Draw language text with shadow
          final float descent = paint.descent();
          final float textHeight = -paint.ascent() + descent;
-@@ -885,7 +895,7 @@ public final class MainKeyboardView extends KeyboardView implements DrawingProxy
+-        final float baseline = height / 2 + textHeight / 2;
++        final float baseline = height / 2.0f + textHeight / 2.0f;
+         if (mLanguageOnSpacebarTextShadowRadius > 0.0f) {
+             paint.setShadowLayer(mLanguageOnSpacebarTextShadowRadius, 0, 0,
+                     mLanguageOnSpacebarTextShadowColor);
+@@ -885,7 +903,7 @@ public final class MainKeyboardView extends KeyboardView implements DrawingProxy
              paint.clearShadowLayer();
          }
          paint.setColor(color);
@@ -141,20 +174,58 @@ index 61e4506..4c75c35 100644
  
          final float ratio = Math.min(1.0f, (width * 0.90f) /
                  TypefaceUtils.getStringWidth(language, paint));
-@@ -894,6 +904,11 @@ public final class MainKeyboardView extends KeyboardView implements DrawingProxy
+@@ -893,7 +911,10 @@ public final class MainKeyboardView extends KeyboardView implements DrawingProxy
+         paint.setTextScaleX(ratio);
          canvas.clipRect(0, 0, width, height);
          if(mLanguageSwipeProgress == 0.0f || mSurroundingLanguages == null) {
-             canvas.drawText(language, width / 2, baseline - descent, paint);
+-            canvas.drawText(language, width / 2, baseline - descent, paint);
++            canvas.drawText(language, width / 2.0f, baseline - descent, paint);
 +            if (showLanguageArrows && !language.isEmpty()) {
-+                paint.setTextScaleX(1.0f);
-+                canvas.drawText("‹", width * 0.15f, baseline - descent, paint);
-+                canvas.drawText("›", width * 0.85f, baseline - descent, paint);
++                drawSpacebarChevrons(canvas, paint, width, height / 2.0f);
 +            }
          } else {
              float sign = Math.signum(mLanguageSwipeProgress);
  
+@@ -924,6 +945,37 @@ public final class MainKeyboardView extends KeyboardView implements DrawingProxy
+         paint.setTextScaleX(1.0f);
+     }
+ 
++    private void drawSpacebarChevrons(final Canvas canvas, final Paint paint,
++            final int width, final float centerY) {
++        final float halfHeight = Math.min(mLanguageOnSpacebarTextSize * 0.32f, width * 0.036f);
++        final float halfWidth = halfHeight * 0.53f;
++        final float left = width * 0.13f;
++        final float right = width - left;
++
++        mSpacebarChevron.rewind();
++        mSpacebarChevron.moveTo(left + halfWidth, centerY - halfHeight);
++        mSpacebarChevron.lineTo(left - halfWidth, centerY);
++        mSpacebarChevron.lineTo(left + halfWidth, centerY + halfHeight);
++        mSpacebarChevron.moveTo(right - halfWidth, centerY - halfHeight);
++        mSpacebarChevron.lineTo(right + halfWidth, centerY);
++        mSpacebarChevron.lineTo(right - halfWidth, centerY + halfHeight);
++
++        final Paint.Style style = paint.getStyle();
++        final Paint.Cap cap = paint.getStrokeCap();
++        final Paint.Join join = paint.getStrokeJoin();
++        final float strokeWidth = paint.getStrokeWidth();
++        paint.clearShadowLayer();
++        paint.setStyle(Paint.Style.STROKE);
++        paint.setStrokeCap(Paint.Cap.ROUND);
++        paint.setStrokeJoin(Paint.Join.ROUND);
++        paint.setStrokeWidth(getResources().getDisplayMetrics().density * 1.4f);
++        canvas.drawPath(mSpacebarChevron, paint);
++        paint.setStyle(style);
++        paint.setStrokeCap(cap);
++        paint.setStrokeJoin(join);
++        paint.setStrokeWidth(strokeWidth);
++    }
++
+     @Override
+     public void deallocateMemory() {
+         super.deallocateMemory();
 diff --git a/java/src/org/futo/inputmethod/latin/Subtypes.kt b/java/src/org/futo/inputmethod/latin/Subtypes.kt
-index 03c0f03..7bb8ee5 100644
+index 03c0f03..2feb263 100644
 --- a/java/src/org/futo/inputmethod/latin/Subtypes.kt
 +++ b/java/src/org/futo/inputmethod/latin/Subtypes.kt
 @@ -121,18 +121,19 @@ object Subtypes {
@@ -182,7 +253,22 @@ index 03c0f03..7bb8ee5 100644
          }
  
          context.setSettingBlocking(ActiveSubtype.key, context.getSettingBlocking(SubtypesSetting).firstOrNull() ?: return)
-@@ -538,4 +539,4 @@ fun LanguageSwitcherDialog(
+@@ -341,8 +342,12 @@ object Subtypes {
+     }
+ 
+     @JvmStatic
+-    fun getLanguageOnSpaceBar(locale: Locale, availableWidth: Float = Float.POSITIVE_INFINITY): String {
+-        if(locale == hideLanguageOnSpaceBarForLocale) return ""
++    fun getLanguageOnSpaceBar(locale: Locale, availableWidth: Float = Float.POSITIVE_INFINITY): String =
++        getLanguageOnSpaceBar(locale, availableWidth, showWhenOnlyLanguage = false)
++
++    @JvmStatic
++    fun getLanguageOnSpaceBar(locale: Locale, availableWidth: Float, showWhenOnlyLanguage: Boolean): String {
++        if(!showWhenOnlyLanguage && locale == hideLanguageOnSpaceBarForLocale) return ""
+ 
+         if(availableWidth <= 5.0f) {
+             return locale.language.uppercase();
+@@ -538,4 +543,4 @@ fun LanguageSwitcherDialog(
              }
          }
      }
@@ -220,6 +306,75 @@ index 30803dc..724a54e 100644
          mSpacebarSwipeMode = prefs.getInt(Settings.PREF_SPACEBAR_SWIPE_MODE,
                  legacySpacebarMode == Settings.SPACEBAR_MODE_SWIPE_LANGUAGE_LEGACY ? Settings.SPACEBAR_MODE_LANGUAGE : Settings.SPACEBAR_MODE_CURSOR);
          mSpacebarHoldMode = prefs.getInt(Settings.PREF_SPACEBAR_HOLD_MODE,
+diff --git a/java/src/org/futo/inputmethod/latin/uix/ActionBar.kt b/java/src/org/futo/inputmethod/latin/uix/ActionBar.kt
+index 26f52ad..c27a46f 100644
+--- a/java/src/org/futo/inputmethod/latin/uix/ActionBar.kt
++++ b/java/src/org/futo/inputmethod/latin/uix/ActionBar.kt
+@@ -186,7 +186,7 @@ val ActionBarExpanded = SettingsKey(
+ 
+ val OldStyleActionsBar = SettingsKey(
+     booleanPreferencesKey("oldActionBar"),
+-    false
++    true
+ )
+ 
+ 
+diff --git a/java/src/org/futo/inputmethod/latin/uix/BasicThemeProvider.kt b/java/src/org/futo/inputmethod/latin/uix/BasicThemeProvider.kt
+index 6af2ba2..687c672 100644
+--- a/java/src/org/futo/inputmethod/latin/uix/BasicThemeProvider.kt
++++ b/java/src/org/futo/inputmethod/latin/uix/BasicThemeProvider.kt
+@@ -353,8 +353,12 @@ class BasicThemeProvider(val context: Context, val colorScheme: KeyboardColorSch
+         val onKeyColorHalf = Color(onKeyColor).copy(alpha = 0.5f).toArgb()
+         val onKeyColorThird = Color(onKeyColor).copy(alpha = 0.33f).toArgb()
+ 
+-        val enterKeyBackground = if(expertMode) { functionalKeyColor } else { primary }
+-        val enterKeyForeground = if(expertMode) { onBackgroundThird } else { onPrimary }
++        val actionKeyColor = advanced.actionKeyColor?.toArgb() ?: primary
++        val enterKeyForeground = if(expertMode) {
++            onBackgroundThird
++        } else {
++            advanced.actionKeyTextColor?.toArgb() ?: onPrimary
++        }
+ 
+         colors[R.styleable.Keyboard_Key_keyTextColor] = onKeyColor
+         colors[R.styleable.Keyboard_Key_keyTextInactivatedColor] = onKeyColorHalf
+@@ -429,7 +433,8 @@ class BasicThemeProvider(val context: Context, val colorScheme: KeyboardColorSch
+             48.dp * roundness
+         }
+ 
+-        val actionKeyRadius = 128.dp * roundness
++        val actionKeyRadius = advanced.actionKeyCornerRadius ?: (128.dp * roundness)
++        val spacebarColor = advanced.spacebarColor?.toArgb() ?: keyColor
+ 
+         keyStyles = mapOf(
+             KeyVisualStyle.Action to if(expertMode) {
+@@ -442,8 +447,8 @@ class BasicThemeProvider(val context: Context, val colorScheme: KeyboardColorSch
+                 )
+             } else {
+                 VisualStyleDescriptor(
+-                    backgroundDrawable = coloredRoundedRectangle(colorScheme.primary.toArgb(), dp(actionKeyRadius)),
+-                    foregroundColor    = colorScheme.onPrimary.toArgb(),
++                    backgroundDrawable = coloredRoundedRectangle(actionKeyColor, dp(actionKeyRadius)),
++                    foregroundColor    = enterKeyForeground,
+ 
+                     backgroundDrawablePressed = coloredRoundedRectangle(colorScheme.secondaryContainer.toArgb(), dp(actionKeyRadius)),
+                     foregroundColorPressed    = colorScheme.onSecondaryContainer.toArgb()
+@@ -518,7 +523,7 @@ class BasicThemeProvider(val context: Context, val colorScheme: KeyboardColorSch
+             ),
+ 
+             KeyVisualStyle.Spacebar to when {
+-                keyBorders -> makeVisualStyle(keyColor, onKeyColor, highlight, highlightForeground, spaceCornerRadius)
++                keyBorders -> makeVisualStyle(spacebarColor, onKeyColor, highlight, highlightForeground, spaceCornerRadius)
+                 expertMode -> makeVisualStyle(
+                     colorScheme.outline.copy(alpha = 0.1f).toArgb(),
+                     onKeyColor,
+@@ -556,4 +561,4 @@ class BasicThemeProvider(val context: Context, val colorScheme: KeyboardColorSch
+             "Icons differ. Missing: ${KeyboardIconsSet.validIcons - icons.keys}, extraneous: ${icons.keys - KeyboardIconsSet.validIcons}"
+         }
+     }
+-}
+\ No newline at end of file
++}
 diff --git a/java/src/org/futo/inputmethod/latin/uix/settings/pages/PredictiveText.kt b/java/src/org/futo/inputmethod/latin/uix/settings/pages/PredictiveText.kt
 index 1e70132..54e9b1e 100644
 --- a/java/src/org/futo/inputmethod/latin/uix/settings/pages/PredictiveText.kt
@@ -240,6 +395,27 @@ index 1e70132..54e9b1e 100644
 -)
 \ No newline at end of file
 +)
+diff --git a/java/src/org/futo/inputmethod/latin/uix/theme/AdvancedThemeOptions.kt b/java/src/org/futo/inputmethod/latin/uix/theme/AdvancedThemeOptions.kt
+index 778f7f3..1386dac 100644
+--- a/java/src/org/futo/inputmethod/latin/uix/theme/AdvancedThemeOptions.kt
++++ b/java/src/org/futo/inputmethod/latin/uix/theme/AdvancedThemeOptions.kt
+@@ -5,6 +5,7 @@ import android.graphics.RectF
+ import android.graphics.Typeface
+ import android.graphics.drawable.Drawable
+ import androidx.compose.ui.graphics.ImageBitmap
++import androidx.compose.ui.graphics.Color
+ import androidx.compose.ui.unit.Dp
+ import androidx.compose.ui.unit.dp
+ 
+@@ -42,4 +43,8 @@ data class AdvancedThemeOptions(
+     val hintWeight: Float? = null,
+ 
+     val centerHints: Boolean = false,
++    val spacebarColor: Color? = null,
++    val actionKeyColor: Color? = null,
++    val actionKeyTextColor: Color? = null,
++    val actionKeyCornerRadius: Dp? = null,
+ )
 diff --git a/java/src/org/futo/inputmethod/latin/uix/theme/ThemeOptions.kt b/java/src/org/futo/inputmethod/latin/uix/theme/ThemeOptions.kt
 index 35528ed..d1611f4 100644
 --- a/java/src/org/futo/inputmethod/latin/uix/theme/ThemeOptions.kt
@@ -286,15 +462,23 @@ index 35528ed..d1611f4 100644
 \ No newline at end of file
 +}
 diff --git a/java/src/org/futo/inputmethod/latin/uix/theme/presets/AMOLEDDarkPurple.kt b/java/src/org/futo/inputmethod/latin/uix/theme/presets/AMOLEDDarkPurple.kt
-index 6fb45a8..4059fef 100644
+index 6fb45a8..256fb55 100644
 --- a/java/src/org/futo/inputmethod/latin/uix/theme/presets/AMOLEDDarkPurple.kt
 +++ b/java/src/org/futo/inputmethod/latin/uix/theme/presets/AMOLEDDarkPurple.kt
-@@ -52,8 +52,34 @@ val AMOLEDDarkPurple = ThemeOption(
+@@ -3,6 +3,7 @@ package org.futo.inputmethod.latin.uix.theme.presets
+ import androidx.compose.runtime.Composable
+ import androidx.compose.ui.graphics.Color
+ import androidx.compose.ui.tooling.preview.Preview
++import androidx.compose.ui.unit.dp
+ import org.futo.inputmethod.latin.R
+ import org.futo.inputmethod.latin.uix.extendedDarkColorScheme
+ import org.futo.inputmethod.latin.uix.theme.ThemeOption
+@@ -52,8 +53,49 @@ val AMOLEDDarkPurple = ThemeOption(
      darkScheme
  }
  
 +private val samsungAccent = Color(0xFFD1BCFF)
-+private val samsungSurface = Color(0xFF120F1A)
++private val samsungContainer = Color(0xFF120F1A)
 +
 +val SamsungS25Ultra = ThemeOption(
 +    dynamic = false,
@@ -305,16 +489,31 @@ index 6fb45a8..4059fef 100644
 +    darkScheme.copy(
 +        base = darkScheme.base.copy(
 +            primary = samsungAccent,
-+            surfaceContainer = samsungSurface,
-+            surfaceContainerHighest = samsungSurface
++            secondary = samsungAccent,
++            surfaceContainer = samsungContainer,
++            surfaceContainerHighest = samsungContainer
 +        ),
 +        extended = darkScheme.extended.copy(
 +            keyboardSurface = Color.Black,
-+            keyboardSurfaceDim = samsungSurface,
-+            keyboardContainer = samsungSurface,
-+            keyboardContainerVariant = samsungSurface,
-+            keyboardPress = Color(0xFF31264F),
-+            primaryTransparent = samsungAccent.copy(alpha = 0.3f)
++            keyboardSurfaceDim = samsungContainer,
++            keyboardContainer = Color(0xFF332E3E),
++            keyboardContainerVariant = Color(0xFF443950),
++            onKeyboardContainer = Color(0xFFF5F1FA),
++            keyboardPress = Color(0xFF57486E),
++            keyboardContainerPressed = Color(0xFF57486E),
++            onKeyboardContainerPressed = Color(0xFFFAF7FF),
++            hintColor = Color(0xFFAEA3BF),
++            primaryTransparent = samsungAccent.copy(alpha = 0.3f),
++            advancedThemeOptions = darkScheme.extended.advancedThemeOptions.copy(
++                keyBorders = true,
++                keyRoundness = 0.67f,
++                textSizeMultiplier = 0.84f,
++                hintSizeMultiplier = 0.90f,
++                spacebarColor = Color(0xFF393247),
++                actionKeyColor = Color(0xFF4B3C60),
++                actionKeyTextColor = samsungAccent,
++                actionKeyCornerRadius = 6.dp
++            )
 +        )
 +    )
 +}
@@ -326,19 +525,38 @@ index 6fb45a8..4059fef 100644
 -}
 \ No newline at end of file
 +}
+diff --git a/java/src/org/futo/inputmethod/v2keyboard/KeyboardLayoutSet.kt b/java/src/org/futo/inputmethod/v2keyboard/KeyboardLayoutSet.kt
+index 91265b4..54d21a1 100644
+--- a/java/src/org/futo/inputmethod/v2keyboard/KeyboardLayoutSet.kt
++++ b/java/src/org/futo/inputmethod/v2keyboard/KeyboardLayoutSet.kt
+@@ -320,9 +320,12 @@ Layout: $layoutName
+             }
+         }
+ 
++        val metrics = context.resources.displayMetrics
++        val isSamsungPortrait = params.keyboardLayoutSet == LayoutManager.SAMSUNG_S25_LAYOUT &&
++                params.computedSize is RegularKeyboardSize && metrics.widthPixels < metrics.heightPixels
+         val layoutParams = LayoutParams(
+             size = params.computedSize,
+-            gap = params.gap.dp,
++            gap = if (isSamsungPortrait) 3.dp else params.gap.dp,
+             standardRowHeight = singularRowHeight,
+             element = element
+         )
 diff --git a/java/src/org/futo/inputmethod/v2keyboard/KeyboardSizingCalculator.kt b/java/src/org/futo/inputmethod/v2keyboard/KeyboardSizingCalculator.kt
-index 77c298a..8ce9256 100644
+index 77c298a..d4a7e5d 100644
 --- a/java/src/org/futo/inputmethod/v2keyboard/KeyboardSizingCalculator.kt
 +++ b/java/src/org/futo/inputmethod/v2keyboard/KeyboardSizingCalculator.kt
-@@ -462,12 +462,22 @@ class KeyboardSizingCalculator(val context: Context, val uixManager: UixManager)
+@@ -462,12 +462,23 @@ class KeyboardSizingCalculator(val context: Context, val uixManager: UixManager)
              KeyboardMode.Floating -> dp(Rect(8,8,8,8))
          }
  
 -        val singularRowHeight = ((ResourceUtils.getDefaultKeyboardHeight(context.resources) + heightAddition - padding.bottom) / 4.0) *
++        val width = getDefaultKeyboardWidth()
 +        val isSamsungPortrait = layoutName == LayoutManager.SAMSUNG_S25_LAYOUT &&
 +                displayWidth < displayHeight && savedSettings.currentMode == KeyboardMode.Regular
 +        val defaultHeight = if (isSamsungPortrait) {
-+            displayWidth * 0.69
++            width * 0.61
 +        } else {
 +            ResourceUtils.getDefaultKeyboardHeight(context.resources).toDouble()
 +        }
@@ -355,7 +573,16 @@ index 77c298a..8ce9256 100644
                      // If layout requires no number row, never add any number row height
                      layout.numberRowMode == NumberRowMode.AlwaysDisabled -> 0.0
  
-@@ -595,4 +605,4 @@ class KeyboardSizingCalculator(val context: Context, val uixManager: UixManager)
+@@ -491,8 +502,6 @@ class KeyboardSizingCalculator(val context: Context, val uixManager: UixManager)
+ 
+         val foldState = foldStateProvider.foldState.feature
+ 
+-        val width = getDefaultKeyboardWidth()
+-
+         return when {
+             // Special case: 50% screen height no matter the row count or settings
+             sizeStateProvider.currentSizeState == KeyboardSizeSettingKind.FoldableInnerDisplay
+@@ -595,4 +604,4 @@ class KeyboardSizingCalculator(val context: Context, val uixManager: UixManager)
                      && (context.getSetting(OldStyleActionsBar) == false) -> dp(2 * calculateSuggestionBarHeightDp())
              else -> dp(calculateSuggestionBarHeightDp())
          }
