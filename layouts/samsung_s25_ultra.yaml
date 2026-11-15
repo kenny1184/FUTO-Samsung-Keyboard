@@ -36,7 +36,7 @@ rows:
       - {type: base, spec: s, hint: "@", moreKeys: ["@"]}
       - {type: base, spec: d, hint: "#", moreKeys: ["#"]}
       - {type: base, spec: f, hint: "€", moreKeys: ["€"]}
-      - {type: base, spec: g, hint: "%", moreKeys: ["%"]}
+      - {type: base, spec: g, hint: "%", moreKeys: ["%|%"]}
       - {type: base, spec: h, hint: "&", moreKeys: ["&"]}
       - {type: base, spec: j, hint: "*", moreKeys: ["*"]}
       - {type: base, spec: k, hint: "(", moreKeys: ["("]}
@@ -48,7 +48,7 @@ rows:
       - {type: base, spec: c, hint: '"', moreKeys: ['"']}
       - {type: base, spec: v, hint: ":", moreKeys: [":"]}
       - {type: base, spec: b, hint: ";", moreKeys: [";"]}
-      - {type: base, spec: n, hint: ",", moreKeys: ['\,']}
+      - {type: base, spec: n, hint: ",", moreKeys: [","]}
       - {type: base, spec: m, hint: "?", moreKeys: ["?"]}
       - {type: delete, attributes: {width: Custom1}}
   - bottom:
