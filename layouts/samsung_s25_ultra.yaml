@@ -1,0 +1,57 @@
+name: Samsung S25 Ultra
+description: QWERTY with a fixed number row and Samsung-style symbol shortcuts.
+languages: nl en_US en_GB
+layoutSetOverrides:
+  symbols: samsung_s25_symbols
+  symbolsShifted: samsung_s25_symbols_2
+numberRowMode: AlwaysEnabled
+bottomRowHeightMode: Flexible
+rowHeightMode: FillHeight
+attributes:
+  style: NoBackground
+  moreKeyMode: OnlyFromLetter
+  useKeySpecShortcut: false
+rows:
+  - numbers: "1 2 3 4 5 6 7 8 9 0"
+    rowHeight: 1.0
+    attributes: {width: Regular, moreKeyMode: OnlyExplicit}
+  - letters:
+      - {type: base, spec: q, hint: "+", moreKeys: ["+"]}
+      - {type: base, spec: w, hint: "×", moreKeys: ["×"]}
+      - {type: base, spec: e, hint: "÷", moreKeys: ["÷"]}
+      - {type: base, spec: r, hint: "=", moreKeys: ["="]}
+      - {type: base, spec: t, hint: "/", moreKeys: ["/"]}
+      - {type: base, spec: y, hint: "_", moreKeys: ["_"]}
+      - {type: base, spec: u, hint: "<", moreKeys: ["<"]}
+      - {type: base, spec: i, hint: ">", moreKeys: [">"]}
+      - {type: base, spec: o, hint: "[", moreKeys: ["["]}
+      - {type: base, spec: p, hint: "]", moreKeys: ["]"]}
+  - letters:
+      - {type: base, spec: a, hint: "!", moreKeys: ["!"]}
+      - {type: base, spec: s, hint: "@", moreKeys: ["@"]}
+      - {type: base, spec: d, hint: "#", moreKeys: ["#"]}
+      - {type: base, spec: f, hint: "€", moreKeys: ["€"]}
+      - {type: base, spec: g, hint: "%", moreKeys: ["%"]}
+      - {type: base, spec: h, hint: "&", moreKeys: ["&"]}
+      - {type: base, spec: j, hint: "*", moreKeys: ["*"]}
+      - {type: base, spec: k, hint: "(", moreKeys: ["("]}
+      - {type: base, spec: l, hint: ")", moreKeys: [")"]}
+  - letters:
+      - {type: shift, attributes: {style: NoBackground}}
+      - {type: base, spec: z, hint: "-", moreKeys: ["-"]}
+      - {type: base, spec: x, hint: "'", moreKeys: ["'"]}
+      - {type: base, spec: c, hint: '"', moreKeys: ['"']}
+      - {type: base, spec: v, hint: ":", moreKeys: [":"]}
+      - {type: base, spec: b, hint: ";", moreKeys: [";"]}
+      - {type: base, spec: n, hint: ",", moreKeys: ['\,']}
+      - {type: base, spec: m, hint: "?", moreKeys: ["?"]}
+      - {type: delete, attributes: {style: NoBackground}}
+  - bottom:
+      - type: base
+        spec: "!#1|!code/key_switch_alpha_symbol"
+        attributes: {width: FunctionalKey, showPopup: false, anchored: true}
+      - {type: contextual, fallbackKey: ","}
+      - {type: space, attributes: {style: NoBackground}}
+      - "$period"
+      - {type: enter, attributes: {style: NoBackground, width: FunctionalKey}}
+    attributes: {moreKeyMode: OnlyExplicit, showPopup: false}
